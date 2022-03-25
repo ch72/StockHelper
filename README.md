@@ -1,2 +1,2 @@
 # StockHelper
-TBD
+TBD: Project is still in VERY early development.
