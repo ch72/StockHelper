@@ -22,6 +22,8 @@ def main():
     with RESTClient(key) as client:
             
             stock = input("Which stock projection are you looking for?\n")
+            resp = client.stocks_equities_daily_open_close(stock, "2022-03-24")
+            price = resp.close
 
             try: resp = client.reference_tickers_v3("https://api.polygon.io/v3/reference/tickers/" + stock + "?apiKey=" + key)
             except: print (" is not a ticker")
@@ -56,9 +58,11 @@ def main():
                 print ("Something went wrong with data retrieval.")
                 exit(2)
 
-            print("Market Cap: " + marketCap)
-            print("Revenue: " + revenue)
-            print((float(marketCap))/(float(revenue)))
+            #print("Market Cap: " + marketCap)
+            #print("Revenue: " + revenue)
+            #print((float(marketCap))/(float(revenue)))
+
+            projections(price, round(float(marketCap)/float(revenue))/4, 10)
 
 
 # Creates the matrix that contains possible future stock prices
