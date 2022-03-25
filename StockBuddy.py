@@ -58,11 +58,12 @@ def main():
                 print ("Something went wrong with data retrieval.")
                 exit(2)
 
+            #print("Price: " + str(price))
             #print("Market Cap: " + marketCap)
             #print("Revenue: " + revenue)
             #print((float(marketCap))/(float(revenue)))
 
-            projections(price, round(float(marketCap)/float(revenue))/4, 10)
+            projections(price, round(float(marketCap)/float(revenue)), 10)
 
 
 # Creates the matrix that contains possible future stock prices
@@ -90,6 +91,7 @@ def projections(stockPrice, valuation, growthRate):
     print("".ljust(10) + "|")
     print("".ljust(6) + str(round(valuation + valDiff)).rjust(3) + "".ljust(1) + "|" + "".ljust(2) + \
         priceMatrix[2][0].ljust(8) + priceMatrix[2][1].ljust(8) + priceMatrix[2][2].ljust(8))
+    print("".ljust(10) + "|")
 
 # Calculates a stock price prediction based on valuations and growth rates
 # Growth rate should be inputted as a whole number (30 = 30%)
