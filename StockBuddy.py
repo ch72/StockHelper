@@ -21,29 +21,25 @@ def main():
     # https://requests.readthedocs.io/en/master/user/advanced/#session-objects
     with RESTClient(key) as client:
             
+            # Retrieve stock price
             stock = input("Which stock projection are you looking for?\n")
-            resp = client.stocks_equities_daily_open_close(stock, "2022-03-24")
-            price = resp.close
+            price = -1
+            try: resp = client.stocks_equities_previous_close(stock)
+            except: print (stock + "is not a ticker")
+            if(resp.status == "OK"): price = resp.results[0]['c']
 
+            # Retrieve market cap
             try: resp = client.reference_tickers_v3("https://api.polygon.io/v3/reference/tickers/" + stock + "?apiKey=" + key)
             except: print (" is not a ticker")
-
-            # Retrive market cap
             marketCap = -1
-            for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):
+            for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):     # Parse through JSON to find market cap
                 if (data[0:13] == "\'market_cap\':"): 
                     marketCap = data[13:]
                     break
-            if (float(marketCap) < 0): 
+            if (float(marketCap) < 0):      # Exits if something goes wrong with retrieval
                 print ("Something went wrong with data retrieval.")
                 exit(1)
-            
-            # TODO: Learn query parameters
-            #queryParams = {
-             #   'ticker': 'CRM',
-             #   'timeframe': 'annual',
-             #   'apiKey': 'insert key here'
-            #}
+    
 
             try: resp = client.reference_stock_financials(stock)
             except: print ("Something went wrong with Polygon")
@@ -66,13 +62,20 @@ def main():
             projections(price, round(float(marketCap)/float(revenue)), 10)
 
 
+# TODO: Rounding hurts accuracy for priceMatrix
 # Creates the matrix that contains possible future stock prices
 def projections(stockPrice, valuation, growthRate):
 
-    # TODO: Make these variables scale to the size of valuation and growth rate
-    growthDiff = 10
-    valDiff = 5
+    #valuation = (round(stockPrice)*valuation)/stockPrice
 
+    if (valuation == 0): return "Something Went Wrong"
+
+    # TODO: Make these variables scale to the size of growth rate
+    growthDiff = 10
+    valDiff = round(valuation/2)
+
+    # Creates price matrix that contains values from calcFutureStockPrice
+    # Inputs include stock price, valuation +/- valDiff, and growth rate +/- growthDiff
     priceMatrix = [[calcFuturePrice(stockPrice, valuation, valuation+valDiff*j, growthRate+growthDiff*i) \
     for i in range(-1, 2)] for j in range(-1, 2)]
 
@@ -91,7 +94,6 @@ def projections(stockPrice, valuation, growthRate):
     print("".ljust(10) + "|")
     print("".ljust(6) + str(round(valuation + valDiff)).rjust(3) + "".ljust(1) + "|" + "".ljust(2) + \
         priceMatrix[2][0].ljust(8) + priceMatrix[2][1].ljust(8) + priceMatrix[2][2].ljust(8))
-    print("".ljust(10) + "|")
 
 # Calculates a stock price prediction based on valuations and growth rates
 # Growth rate should be inputted as a whole number (30 = 30%)
