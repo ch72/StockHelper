@@ -21,52 +21,61 @@ def main():
     # https://requests.readthedocs.io/en/master/user/advanced/#session-objects
     with RESTClient(key) as client:
             
-            # Retrieve stock price
             stock = input("Which stock projection are you looking for?\n")
             price = -1
             try: resp = client.stocks_equities_previous_close(stock)
             except: print (stock + "is not a ticker")
             if(resp.status == "OK"): price = resp.results[0]['c']
 
-            # Retrieve market cap
             try: resp = client.reference_tickers_v3("https://api.polygon.io/v3/reference/tickers/" + stock + "?apiKey=" + key)
-            except: print (" is not a ticker")
+            except: print (stock + "is not a ticker")
+
+            # Retrive market cap
             marketCap = -1
-            for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):     # Parse through JSON to find market cap
+            for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):
                 if (data[0:13] == "\'market_cap\':"): 
                     marketCap = data[13:]
                     break
-            if (float(marketCap) < 0):      # Exits if something goes wrong with retrieval
+            if (float(marketCap) < 0): 
                 print ("Something went wrong with data retrieval.")
                 exit(1)
-    
+            
+            revenue = input("What was the company's full year revenue?\n")
 
-            try: resp = client.reference_stock_financials(stock)
-            except: print ("Something went wrong with Polygon")
+            # TODO: Learn query parameters
+
+            #resp = client.reference_stock_financials(stock, filing_date="2022-02-03")
+            #except: print ("Something went wrong with Polygon")
 
             # Retrieve revenue (sales)
-            revenue = -1
-            for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):
-                if (data[0:11] == "\'revenues\':"): 
-                    revenue = data[11:]
-                    break
-            if (float(revenue) < 0):
-                print ("Something went wrong with data retrieval.")
-                exit(2)
+            #revenue = -1
+            #for data in re.split(",", str(re.sub(" ", "", str(resp.results)))):
+            #    print(data)
+            #    if (data[0:11] == "\'revenues\':"): 
+            #        revenue = data[11:]
+            #        #break
+            #if (float(revenue) < 0):
+            #    print ("Something went wrong with data retrieval.")
+            #    exit(2)
 
-            #print("Price: " + str(price))
             #print("Market Cap: " + marketCap)
             #print("Revenue: " + revenue)
             #print((float(marketCap))/(float(revenue)))
 
-            projections(price, round(float(marketCap)/float(revenue)), 10)
+            if (marketCap < 0 or revenue < 0 or price < 0):
+                print ("Something went wrong.")
+                exit(1)
+
+            projections(price, marketCap/revenue, 10)
 
 
 # TODO: Rounding hurts accuracy for priceMatrix
 # Creates the matrix that contains possible future stock prices
 def projections(stockPrice, valuation, growthRate):
 
-    #valuation = (round(stockPrice)*valuation)/stockPrice
+    # Rounds valuation and updates stock price to reflect rounded valuation (to improve accuracy)
+    stockPrice = (round(valuation) * stockPrice) / valuation
+    valuation = round(valuation)
 
     if (valuation == 0): return "Something Went Wrong"
 
