@@ -62,7 +62,7 @@ def main():
             #print("Revenue: " + revenue)
             #print((float(marketCap))/(float(revenue)))
 
-            if (marketCap < 0 or revenue < 0 or price < 0):
+            if (float(marketCap) < 0 or float(revenue) < 0 or float(price) < 0):
                 print ("Something went wrong.")
                 exit(1)
 
