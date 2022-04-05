@@ -68,13 +68,17 @@ def main():
                 exit(1)
 
             growth = input("What is the projected growth rate?\n")
+            #numOfYears = input("Over how many years?\n")
+            optimism = input("Optimistic, fair, or pessimistic (O/F/P)?\n").upper()
 
-            projections(float(price), float(priceToSales), int(growth), 3, 3)
+            if (optimism == "O"): projections(float(price), float(priceToSales), int(growth), 5, 5, "O")
+            elif (optimism == "P"): projections(float(price), float(priceToSales), int(growth), 5, 5, "P")
+            else: projections(float(price), float(priceToSales), int(growth), 5, 5, "F")
 
 
 #TODO: Fix calculations for P/S of anything close to 0 (1, 2, 0.5, etc)
 # Creates a table that projects future stock prices based on valuation changes and growth rates
-def projections(stockPrice, valuation, growthRate, rows, columns):
+def projections(stockPrice, valuation, growthRate, rows, columns, optimism, years=5):
 
     # Rounds valuation and updates stock price to reflect rounded valuation (to improve accuracy)
     stockPrice = (round(valuation) * stockPrice) / valuation
@@ -88,15 +92,27 @@ def projections(stockPrice, valuation, growthRate, rows, columns):
     if (valDiff <= 0):
         valDiff = valuation / rows
 
-    leftCol = int(-1 * int(columns / 2))    # All left/right variables are casted to int 
-    rightCol = int(columns + leftCol)       # to ensure no decimals cause errors
+    if (optimism == "O"):
+        leftCol = 0
+        rightCol = columns
+        leftRow = 0
+        rightRow = rows
 
-    leftRow = int(-1 * int(rows/2))
-    rightRow = int(rows + leftRow)
+    elif (optimism == "P"):
+        leftCol = -1 * columns + 1
+        rightCol = 1
+        leftRow = -1 * rows + 1
+        rightRow = 1
+
+    else:
+        leftCol = int(-1 * int(columns / 2))    # All left/right variables are casted to int 
+        rightCol = int(columns + leftCol)       # to ensure no decimals cause errors
+        leftRow = int(-1 * int(rows/2))
+        rightRow = int(rows + leftRow)
 
     # Creates price matrix that contains values from calcFutureStockPrice
     # using stock price, valuation +/- valDiff, and growth rate +/- growthDiff
-    priceMatrix = [[calcFuturePrice(stockPrice, valuation, valuation+valDiff*j, growthRate+growthDiff*i) \
+    priceMatrix = [[calcFuturePrice(stockPrice, valuation, valuation+valDiff*j, growthRate+growthDiff*i, years) \
     for i in range(leftCol, rightCol)] for j in range(leftRow, rightRow)]
 
     generateHeader(growthRate, growthDiff, leftCol, rightCol)
@@ -140,9 +156,9 @@ def generateValuesForRow(values):
 
 # Calculates a stock price prediction based on valuations and growth rates
 # Growth rate should be inputted as a whole number (30 = 30%)
-def calcFuturePrice(stockPrice, oldVal, newVal, growth, years = 5):
+def calcFuturePrice(stockPrice, oldVal, newVal, growth, years):
 
-    if (newVal > 0): return str(round(((int(newVal)/int(oldVal))*math.pow(1 + int(growth)/100, years)) * stockPrice))
+    if (newVal > 0): return str(round(((int(newVal)/int(oldVal))*math.pow(1 + int(growth)/100, int(years))) * stockPrice))
     return 0
 
 main()
