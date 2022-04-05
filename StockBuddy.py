@@ -1,18 +1,17 @@
+from time import timezone
 from polygon import RESTClient
 import math
-import re
+import requests
 
-# -------------------------------------
+# -------------------------------------------------------------------------------
 # Stock Projector
 #
-# Inputs: Ticker
+# Inputs: Stock ticker, projected growth rate, and optimism level
 #
-# Output: A matrix containing various
-# stock prices based on different
-# P/S ratios and growth rates
-# -------------------------------------
+# Prints: A table containing various stock prices based on different
+# P/S ratios and growth rates after 5 years
+# -------------------------------------------------------------------------------
 
-# TODO: Find source of wrong values (wrong API numbers or regex is pulling the wrong numbers)
 def main():
 
     key = ""
@@ -22,50 +21,39 @@ def main():
     with RESTClient(key) as client:
             
             #Retrieve stock price
-            stock = input("Which stock projection are you looking for?\n")
+            stock = input("Which stock projection are you looking for?\n").upper()
             price = -1
-            try: resp = client.stocks_equities_previous_close(stock.upper())
+            try: resp = client.stocks_equities_previous_close(stock)
             except: 
                 print (stock + " is not a ticker")
                 exit(1)
             if(resp.status == "OK"): price = resp.results[0]['c']
 
-            priceToSales = input("What is the price to sales ratio?\n")
-
             # Retrieve market cap
-            #try: resp = client.reference_tickers_v3("https://api.polygon.io/v3/reference/tickers/" + stock + "?apiKey=" + key)
-            #except: print (stock + " is not a ticker")
-            #marketCap = -1
-            #if (resp.status == "OK"): marketCap = resp.results['market_cap']
+            try: resp = client.reference_tickers_v3("https://api.polygon.io/v3/reference/tickers/" + stock + "?apiKey=" + key)
+            except: print (stock + " is not a ticker")
+            marketCap = -1
+            if (resp.status == "OK"): marketCap = resp.results['market_cap']
             
-            #if (float(marketCap) < 0): 
-            #    print ("Something went wrong with data retrieval.")
-            #    exit(1)
-            
-            #revenue = input("What was the company's full year revenue?\n")
+            if (float(marketCap) < 0): 
+                print ("Something went wrong with data retrieval.")
+                exit(1)
 
-            # TODO: Fix to find proper annual revenue
+            # TODO: Handle errors if api retrieval fails or retrieves wrong info
             # Retrieve revenue (sales)
+            revenue = -1
+            try: resp = requests.get('https://api.polygon.io/vX/reference/financials?ticker=' + stock + '&timeframe=annual&apiKey=' + key)
+            except: print ("Something went wrong with Polygon")
+            revenue = resp.json()['results'][0]['financials']['income_statement']['revenues']['value']
 
-            #try: resp = client.reference_stock_financials(symbol=stock, timeframe="annual")
-            #except: print ("Something went wrong with Polygon")
-            #print (resp.results)
-
-            #revenue = -1
-            #if (resp.status == "OK"): revenue = (resp.results[0]['revenues'])
-            #print (resp.results[0])
-
-            #if (float(revenue) < 0):
-            #    print ("Something went wrong with data retrieval.")
-            #    exit(2)
-
-            #if (float(marketCap) < 0 or float(revenue) < 0 or float(price) < 0):
-            #    print ("Something went wrong.")
-            #    exit(1)
-
-            if (float(priceToSales) < 0 or float(price) < 0):
+            if (float(marketCap) < 0 or float(revenue) < 0 or float(price) < 0):
                 print ("Something went wrong.")
                 exit(1)
+
+            priceToSales = float(marketCap)/float(revenue)
+
+            #print("Revenue (in billions): " + str(revenue / 1000000000))
+            #print("Market Cap (in billions): " + str(marketCap / 1000000000))
 
             growth = input("What is the projected growth rate?\n")
             #numOfYears = input("Over how many years?\n")
@@ -87,7 +75,7 @@ def projections(stockPrice, valuation, growthRate, rows, columns, optimism, year
     if (valuation == 0): return "Something Went Wrong"
 
     # TODO: Make these variables scale to the size of growth rate
-    growthDiff = 10
+    growthDiff = 5
     valDiff = int(valuation / rows)
     if (valDiff <= 0):
         valDiff = valuation / rows
@@ -128,7 +116,7 @@ def projections(stockPrice, valuation, growthRate, rows, columns, optimism, year
 # Meant for the right side of the "|"
 def generateBlock(value): return str(value).ljust(8)
 
-# Generates header
+# Generates header of table
 def generateHeader(growthRate, growthDiff, leftCol, rightCol):
 
     print("".ljust(10) + "|" + "Growth Rates".rjust(17))
@@ -138,7 +126,7 @@ def generateHeader(growthRate, growthDiff, leftCol, rightCol):
     print(line)
     print("-" * (11 + (rightCol-leftCol)*8))
 
-# Generates the left side of the "|" for a single row of values
+# Generates the left side of the "|" in the table for a single row of values
 def generateLeftOfRow(priceToSales, isMiddle):
 
     priceToSales = str(priceToSales)
@@ -146,7 +134,7 @@ def generateLeftOfRow(priceToSales, isMiddle):
     else: row = "".ljust(6) + priceToSales.rjust(3) + "".ljust(1) + "|"
     return row
 
-# Generates the right side of the "|" for a single row of values
+# Generates the right side of the "|" in the table for a single row of values
 def generateValuesForRow(values): 
     
     row = "".ljust(1)
@@ -161,4 +149,4 @@ def calcFuturePrice(stockPrice, oldVal, newVal, growth, years):
     if (newVal > 0): return str(round(((int(newVal)/int(oldVal))*math.pow(1 + int(growth)/100, int(years))) * stockPrice))
     return 0
 
-main()
+if __name__ == "__main__": main()
