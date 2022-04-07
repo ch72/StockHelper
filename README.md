@@ -7,7 +7,11 @@ So far, stock helper can create a matrix that contains stock price projections b
 
 **How To Use**
 
-Change to directory that contains python file and run:
-  python3 StockBuddy.py
+Change to directory that contains python file and run: python3 StockBuddy.py
+
+Windows: Open up command prompt, change to proper directory, and input:
+
+      javac Driver.java
+      java Driver
 
 and type in stock information when prompted.
