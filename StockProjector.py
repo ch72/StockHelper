@@ -2,6 +2,7 @@ from time import timezone
 from polygon import RESTClient
 import math
 import requests
+from MySQLcommands import *
 
 # -------------------------------------------------------------------------------
 # Stock Projector
@@ -12,14 +13,19 @@ import requests
 # P/S ratios and growth rates after 5 years
 # -------------------------------------------------------------------------------
 
-def main():
+def retrieveProjections():
 
     key = ""
+    restart = 'y'
 
-    # RESTClient can be used as a context manager to facilitate closing the underlying http session
-    # https://requests.readthedocs.io/en/master/user/advanced/#session-objects
-    with RESTClient(key) as client:
-            
+    # while loop allows user to restart program
+    # Note: If too many API calls are made in a short timeframe, APIs calls and subsequent code may fail
+    while (restart == 'y'):
+
+        # RESTClient can be used as a context manager to facilitate closing the underlying http session
+        # https://requests.readthedocs.io/en/master/user/advanced/#session-objects
+        with RESTClient(key) as client:
+                
             #Retrieve stock price
             stock = input("Which stock projection are you looking for?\n").upper()
             price = -1
@@ -39,7 +45,6 @@ def main():
                 print ("Something went wrong with data retrieval.")
                 exit(1)
 
-            # TODO: Handle errors if api retrieval fails or retrieves wrong info
             # Retrieve revenue (sales)
             revenue = -1
             try: resp = requests.get('https://api.polygon.io/vX/reference/financials?ticker=' + stock + '&timeframe=annual&apiKey=' + key)
@@ -59,13 +64,18 @@ def main():
             #numOfYears = input("Over how many years?\n")
             optimism = input("Optimistic, fair, or pessimistic (O/F/P)?\n").upper()
 
+            # Optimism determines how high/low the table's P/S ratios will go for calulations
+            # Growth rates are unchanged by optimism because user can manually change growth if they want more optimism/pessimism
             if (optimism == "O"): projections(float(price), float(priceToSales), int(growth), 5, 5, "O")
             elif (optimism == "P"): projections(float(price), float(priceToSales), int(growth), 5, 5, "P")
             else: projections(float(price), float(priceToSales), int(growth), 5, 5, "F")
 
+        restart = input("Would you like to run it again (y/n)?\n")  # Allows user to restart the program if desired
 
-#TODO: Fix calculations for P/S of anything close to 0 (1, 2, 0.5, etc)
+
+
 # Creates a table that projects future stock prices based on valuation changes and growth rates
+# Valuation in this case are the P/S ratios
 def projections(stockPrice, valuation, growthRate, rows, columns, optimism, years=5):
 
     # Rounds valuation and updates stock price to reflect rounded valuation (to improve accuracy)
@@ -80,35 +90,42 @@ def projections(stockPrice, valuation, growthRate, rows, columns, optimism, year
     if (valDiff <= 0):
         valDiff = valuation / rows
 
-    if (optimism == "O"):
-        leftCol = 0
-        rightCol = columns
+    leftCol = int(-1 * int(columns / 2))    # All left/right variables are casted to int 
+    rightCol = int(columns + leftCol)       # to ensure no decimals cause errors
+
+    # Valuations used for calculations will all be greater than or equal to current stock valuation
+    if (optimism == "O"):    
         leftRow = 0
         rightRow = rows
 
-    elif (optimism == "P"):
-        leftCol = -1 * columns + 1
-        rightCol = 1
+    # Valuations used for calculations will all be less than or equal to current stock valuation
+    elif (optimism == "P"):    
         leftRow = -1 * rows + 1
         rightRow = 1
 
+    # Valuations used for calculations will be both greater than and less than current stock valuation
     else:
-        leftCol = int(-1 * int(columns / 2))    # All left/right variables are casted to int 
-        rightCol = int(columns + leftCol)       # to ensure no decimals cause errors
         leftRow = int(-1 * int(rows/2))
         rightRow = int(rows + leftRow)
+
+    print (f"Current Price (rounded): ${round(stockPrice)}")
 
     # Creates price matrix that contains values from calcFutureStockPrice
     # using stock price, valuation +/- valDiff, and growth rate +/- growthDiff
     priceMatrix = [[calcFuturePrice(stockPrice, valuation, valuation+valDiff*j, growthRate+growthDiff*i, years) \
     for i in range(leftCol, rightCol)] for j in range(leftRow, rightRow)]
+    
+    # Creates matrix of percentages to illustrate whether stock goes up or down
+    # Represented as a number (0.8 = -20% and 1.35 = +35%)
+    #priceMatrix = [[calcFutureGains(valuation, valuation+valDiff*j, growthRate+growthDiff*i, years) \
+    #for i in range(leftCol, rightCol)] for j in range(leftRow, rightRow)]
 
     generateHeader(growthRate, growthDiff, leftCol, rightCol)
     
     # Generates body underneath the header
     for i in range(leftRow, rightRow): 
         print("".ljust(10) + "|")
-        isMiddle = (i == int((rightRow + leftRow)/2))   
+        isMiddle = (i == leftRow + 1)   
         print(generateLeftOfRow(valuation + (valDiff*i), isMiddle), generateValuesForRow(priceMatrix[i - leftRow]))
     print("".ljust(10) + "|")
 
@@ -116,7 +133,7 @@ def projections(stockPrice, valuation, growthRate, rows, columns, optimism, year
 # Meant for the right side of the "|"
 def generateBlock(value): return str(value).ljust(8)
 
-# Generates header of table
+# Generates header of table (growth rates)
 def generateHeader(growthRate, growthDiff, leftCol, rightCol):
 
     print("".ljust(10) + "|" + "Growth Rates".rjust(17))
@@ -126,15 +143,15 @@ def generateHeader(growthRate, growthDiff, leftCol, rightCol):
     print(line)
     print("-" * (11 + (rightCol-leftCol)*8))
 
-# Generates the left side of the "|" in the table for a single row of values
+# Generates the left side of the "|" in the table for a single row of values (P/S ratios)
 def generateLeftOfRow(priceToSales, isMiddle):
 
-    priceToSales = str(priceToSales)
+    priceToSales = str(round(priceToSales, 1))
     if (isMiddle): row = "".ljust(1) + "P/S".ljust(5) + priceToSales.rjust(3) + "".ljust(1) + "|"
     else: row = "".ljust(6) + priceToSales.rjust(3) + "".ljust(1) + "|"
     return row
 
-# Generates the right side of the "|" in the table for a single row of values
+# Generates the right side of the "|" in the table for a single row of values (possible stock prices/gains)
 def generateValuesForRow(values): 
     
     row = "".ljust(1)
@@ -146,7 +163,12 @@ def generateValuesForRow(values):
 # Growth rate should be inputted as a whole number (30 = 30%)
 def calcFuturePrice(stockPrice, oldVal, newVal, growth, years):
 
-    if (newVal > 0): return str(round(((int(newVal)/int(oldVal))*math.pow(1 + int(growth)/100, int(years))) * stockPrice))
+    if (newVal > 0): return str(round(((float(newVal)/float(oldVal))*math.pow(1 + int(growth)/100, int(years))) * stockPrice))
     return 0
 
-if __name__ == "__main__": main()
+# Calculates potential gain of a stock as a percentage based on valuation and growth rates
+def calcFutureGains(oldVal, newVal, growth, years):
+
+    #print (f"New Value: {newVal} and Old Value: {oldVal}")
+    if (newVal > 0): return str(round(((float(newVal)/float(oldVal))*math.pow(1 + int(growth)/100, int(years))), 2))
+    return 0
