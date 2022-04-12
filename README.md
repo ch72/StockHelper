@@ -10,6 +10,6 @@ So far, stock helper can create a matrix that contains stock price projections b
 
 Change to directory that contains python file and run:
 
-      python3 StockBuddy.py
+      python3 StockHelper.py
 
 and type in stock information when prompted.
