@@ -1,4 +1,3 @@
-from time import timezone
 from polygon import RESTClient
 import math
 import requests
@@ -13,9 +12,9 @@ from MySQLcommands import *
 # P/S ratios and growth rates after 5 years
 # -------------------------------------------------------------------------------
 
-def retrieveProjections():
+def retrieveProjections(dbinstance=None):
 
-    key = ""
+    key = "" # <-INSERT POLYGON API KEY HERE
     restart = 'y'
 
     # while loop allows user to restart program
@@ -47,9 +46,10 @@ def retrieveProjections():
 
             # Retrieve revenue (sales)
             revenue = -1
-            try: resp = requests.get('https://api.polygon.io/vX/reference/financials?ticker=' + stock + '&timeframe=annual&apiKey=' + key)
+            try: 
+                resp = requests.get('https://api.polygon.io/vX/reference/financials?ticker=' + stock + '&timeframe=annual&apiKey=' + key)
+                revenue = resp.json()['results'][0]['financials']['income_statement']['revenues']['value']
             except: print ("Something went wrong with Polygon")
-            revenue = resp.json()['results'][0]['financials']['income_statement']['revenues']['value']
 
             if (float(marketCap) < 0 or float(revenue) < 0 or float(price) < 0):
                 print ("Something went wrong.")
@@ -70,6 +70,14 @@ def retrieveProjections():
             elif (optimism == "P"): projections(float(price), float(priceToSales), int(growth), 5, 5, "P")
             else: projections(float(price), float(priceToSales), int(growth), 5, 5, "F")
 
+            # If stock is not in the database, add it to the row
+            if (dbinstance != None and searchTable(dbinstance, "stockinfo", condition=f"ticker='{stock}'") == []):
+                insertRow(dbinstance, 'stockinfo', [stock, price, priceToSales, growth])
+            else: # Otherwise, update row
+                deleteRow(dbinstance, 'stockinfo', condition=f'ticker=\'{stock}\'')
+                insertRow(dbinstance, 'stockinfo', [stock, price, priceToSales, growth])
+                
+
         restart = input("Would you like to run it again (y/n)?\n")  # Allows user to restart the program if desired
 
 
@@ -77,6 +85,8 @@ def retrieveProjections():
 # Creates a table that projects future stock prices based on valuation changes and growth rates
 # Valuation in this case are the P/S ratios
 def projections(stockPrice, valuation, growthRate, rows, columns, optimism, years=5):
+
+    unmodifiedPrice = stockPrice
 
     # Rounds valuation and updates stock price to reflect rounded valuation (to improve accuracy)
     stockPrice = (round(valuation) * stockPrice) / valuation
@@ -108,7 +118,7 @@ def projections(stockPrice, valuation, growthRate, rows, columns, optimism, year
         leftRow = int(-1 * int(rows/2))
         rightRow = int(rows + leftRow)
 
-    print (f"Current Price (rounded): ${round(stockPrice)}")
+    print (f"Current Price (rounded): ${round(unmodifiedPrice)}")
 
     # Creates price matrix that contains values from calcFutureStockPrice
     # using stock price, valuation +/- valDiff, and growth rate +/- growthDiff

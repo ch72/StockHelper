@@ -2,14 +2,16 @@ import mysql.connector
 
 # Start up method for mySQL
 # mydb provides a connector to database
-def mysql_init(hostname, username, passwrd):
+def mysqlInit(hostname, username, passwrd):
 
   # Connects to MySQL database
-  mydb = mysql.connector.connect(
-    host=hostname,
-    user=username,
-    password=passwrd
-  )
+  try: 
+    mydb = mysql.connector.connect(
+      host=hostname,
+      user=username,
+      password=passwrd
+    )
+  except: return None
 
   return mydb
 
@@ -20,7 +22,7 @@ def createDatabase(dbinstance, dbname):
 
   # Creates a database if it does not exist
   try: line.execute(f"CREATE DATABASE {dbname}")
-  except: print("createDatabase: Database already exists")
+  except: pass #print("createDatabase: Database already exists")
 
 # Creates a table in a database on connector
 def createTable(dbinstance, tablename, columnsForTable, dbname = None):
@@ -36,7 +38,7 @@ def createTable(dbinstance, tablename, columnsForTable, dbname = None):
 
   # Creates a table if it does not exist
   try: line.execute(command)
-  except: print("createTable: Table already exists")
+  except: pass #print("createTable: Table already exists")
 
 # Deletes a database on connector
 def deleteDatabase(dbinstance, dbname):
@@ -81,13 +83,18 @@ def searchTable(dbinstance, tablename, condition = None, orderBy = None, columns
   try: 
     line.execute(command)
     return (line.fetchall())
-  except: print("searchTable: Error")
+  except: 
+    print("searchTable: Error")
+    return None
 
 # Displays table in its entirity 
 def showTable(dbinstance, tablename, columnsToShow = None, orderBy = None, dbname = None):
 
   line = dbinstance.cursor()
   table = searchTable(dbinstance, tablename, None, orderBy, columnsToShow, dbname)
+  if table == None: 
+    print ("showTable: Failed to find table to view")
+    return None
   for entry in table:
     print(entry)
 
