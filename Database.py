@@ -10,7 +10,7 @@ def initDatabase(hostname, username, password):
     tablename = "stockinfo"
 
     createDatabase(db, dbname)
-    columns = {'ticker':'char(5)', 'price':'int', 'valuation':'float(10,2)', 'projectedgrowth':'float(10,2)'}
+    columns = {'ticker':'char(5)', 'price':'int', 'valuation':'float(10,2)', 'projectedgrowth':'float(10,2)', 'grossmargin':'float(4,2)'}
     createTable(db, tablename, columns, dbname)
 
     return db

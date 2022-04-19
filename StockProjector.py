@@ -46,9 +46,11 @@ def retrieveProjections(dbinstance=None):
 
             # Retrieve revenue (sales)
             revenue = -1
+            grossMargin = -1
             try: 
                 resp = requests.get('https://api.polygon.io/vX/reference/financials?ticker=' + stock + '&timeframe=annual&apiKey=' + key)
                 revenue = resp.json()['results'][0]['financials']['income_statement']['revenues']['value']
+                grossMargin = float(int(resp.json()['results'][0]['financials']['income_statement']['gross_profit']['value']) / int(revenue))
             except: print ("Something went wrong with Polygon")
 
             if (float(marketCap) < 0 or float(revenue) < 0 or float(price) < 0):
@@ -72,7 +74,7 @@ def retrieveProjections(dbinstance=None):
 
             # If stock is not in the database, add it to the row
             if (dbinstance != None and searchTable(dbinstance, "stockinfo", condition=f"ticker='{stock}'") == []):
-                insertRow(dbinstance, 'stockinfo', [stock, price, priceToSales, growth])
+                insertRow(dbinstance, 'stockinfo', [stock, price, priceToSales, growth, grossMargin])
             else: # Otherwise, update row
                 deleteRow(dbinstance, 'stockinfo', condition=f'ticker=\'{stock}\'')
                 insertRow(dbinstance, 'stockinfo', [stock, price, priceToSales, growth])
