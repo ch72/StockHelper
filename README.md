@@ -8,7 +8,7 @@ So far, stock helper can create a matrix that contains stock price projections b
 
 **How To Use**
 
-Change to directory that contains python file and run:
+Change to directory that contains StockHelper.py file and run:
 
       python3 StockHelper.py
 
