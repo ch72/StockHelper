@@ -99,6 +99,7 @@ def showTable(dbinstance, tablename, columnsToShow = None, orderBy = None, dbnam
     print(entry)
 
 # Adds a row to the specified table
+# If condition contains string, make sure to use ''
 def insertRow(dbinstance, tablename, columnValues, dbname = None):
 
   line = dbinstance.cursor()
@@ -117,6 +118,7 @@ def insertRow(dbinstance, tablename, columnValues, dbname = None):
   except: print("insertRow: Inputted table does not exist or values are invalid")
 
 # Deletes a row from the specified table
+# If condition contains string, make sure to use ''
 def deleteRow(dbinstance, tablename, condition = None, dbname = None):
 
   line = dbinstance.cursor()
