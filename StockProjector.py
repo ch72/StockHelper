@@ -194,7 +194,7 @@ def calcFutureGains(oldVal, newVal, growth, years):
 # Refreshes database info with new stock price, valuation, and gross margin (if needed)
 def refreshDatabaseInfo(dbinstance, key):
 
-    print ("Updating database with today's new stock price", end="", flush=True)
+    print ("Updating database with today's new stock price")
 
     databaseEntries = searchTable(dbinstance, "stockinfo")
 
