@@ -119,7 +119,7 @@ def insertRow(dbinstance, tablename, columnValues, dbname = None):
 
 # Deletes a row from the specified table
 # If condition contains string, make sure to use ''
-def deleteRow(dbinstance, tablename, condition = None, dbname = None):
+def deleteRow(dbinstance, tablename, condition, dbname = None):
 
   line = dbinstance.cursor()
 
@@ -128,4 +128,7 @@ def deleteRow(dbinstance, tablename, condition = None, dbname = None):
   try: 
     line.execute(f"DELETE FROM {tablename} WHERE {condition}")
     dbinstance.commit()
-  except: print ("deleteRow: Inputted table does not exist or condition is invalid")
+    return True
+  except: 
+    print ("deleteRow: Inputted table does not exist or condition is invalid")
+    return False
